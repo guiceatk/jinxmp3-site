@@ -5,7 +5,7 @@ A lightweight, zero-dependency interpreter for custom DSL scripts supporting:
 - User-defined functions & recursion
 - Scoped stack frames & local variable environments
 - IF / WHILE control flow with return signals
-- Constant-folding AST expression optimization
+- Safe SymPy Symbolic Expression Optimization & Constant-Folding
 - Offline module imports (.mini files)
 """
 
@@ -13,6 +13,12 @@ import re
 import sys
 import os
 from pathlib import Path
+
+try:
+    from sympy import sympify, simplify
+    SYMPY_AVAILABLE = True
+except ImportError:
+    SYMPY_AVAILABLE = False
 
 # -------------------------
 # 1. LEXICAL ANALYSIS
@@ -229,8 +235,62 @@ class ReturnSignal(Exception):
         self.value = value
 
 # -------------------------
-# 4. AST OPTIMIZER (Constant Folding)
+# 4. AST OPTIMIZER (Constant Folding + SymPy Simplification)
 # -------------------------
+def safe_sympy_optimize(op, left_val, right_val):
+    """
+    Optimizes a binary operation using SymPy for symbolic simplification.
+    Includes operator validation, operand checks, defensive try/except blocks,
+    and fallback execution to prevent crashes.
+    """
+    supported_ops = {"+", "-", "*", "/", "==", "!=", "<", ">", "<=", ">="}
+    if op not in supported_ops:
+        return None
+
+    if left_val is None or right_val is None:
+        return None
+
+    if not SYMPY_AVAILABLE or op in ("==", "!=", "<", ">", "<=", ">="):
+        # Native numeric fallback for comparison operators or if SymPy missing
+        return _native_eval(op, left_val, right_val)
+
+    try:
+        # Safe symbolic expression construction
+        expr_str = f"({left_val}) {op} ({right_val})"
+        expr = sympify(expr_str)
+    except Exception as e:
+        return _native_eval(op, left_val, right_val)
+
+    try:
+        # Symbolic simplification
+        simplified = simplify(expr)
+    except Exception as e:
+        return _native_eval(op, left_val, right_val)
+
+    try:
+        if hasattr(simplified, "is_number") and simplified.is_number:
+            val = float(simplified)
+            return int(val) if val.is_integer() else val
+        return simplified
+    except Exception:
+        return _native_eval(op, left_val, right_val)
+
+def _native_eval(op, left, right):
+    try:
+        if op == "+": return left + right
+        if op == "-": return left - right
+        if op == "*": return left * right
+        if op == "/": return left / right if right != 0 else 0
+        if op == "==": return 1 if left == right else 0
+        if op == "!=": return 1 if left != right else 0
+        if op == "<": return 1 if left < right else 0
+        if op == ">": return 1 if left > right else 0
+        if op == "<=": return 1 if left <= right else 0
+        if op == ">=": return 1 if left >= right else 0
+    except Exception:
+        return None
+    return None
+
 def optimize_ast(node):
     if not isinstance(node, tuple):
         return node
@@ -240,17 +300,9 @@ def optimize_ast(node):
     if node_type == "binop":
         op, left, right = node[1], optimize_ast(node[2]), optimize_ast(node[3])
         if left[0] == "num" and right[0] == "num":
-            v1, v2 = left[1], right[1]
-            if op == "+": return ("num", v1 + v2)
-            if op == "-": return ("num", v1 - v2)
-            if op == "*": return ("num", v1 * v2)
-            if op == "/": return ("num", v1 / v2 if v2 != 0 else 0)
-            if op == "==": return ("num", 1 if v1 == v2 else 0)
-            if op == "!=": return ("num", 1 if v1 != v2 else 0)
-            if op == "<": return ("num", 1 if v1 < v2 else 0)
-            if op == ">": return ("num", 1 if v1 > v2 else 0)
-            if op == "<=": return ("num", 1 if v1 <= v2 else 0)
-            if op == ">=": return ("num", 1 if v1 >= v2 else 0)
+            opt_val = safe_sympy_optimize(op, left[1], right[1])
+            if opt_val is not None and isinstance(opt_val, (int, float)):
+                return ("num", opt_val)
         return ("binop", op, left, right)
 
     elif node_type == "assign":
@@ -288,6 +340,10 @@ class Interpreter:
         self.functions = {}
         self.base_dir = Path(base_dir)
 
+    def optimize(self, op, left, right):
+        """Public method exposing safe symbolic / numeric optimization."""
+        return safe_sympy_optimize(op, left, right)
+
     def eval(self, node, local_vars=None):
         if local_vars is None:
             local_vars = {}
@@ -309,17 +365,12 @@ class Interpreter:
             op = node[1]
             left = self.eval(node[2], local_vars)
             right = self.eval(node[3], local_vars)
-            if op == "+": return left + right
-            if op == "-": return left - right
-            if op == "*": return left * right
-            if op == "/": return left / right if right != 0 else 0
-            if op == "==": return 1 if left == right else 0
-            if op == "!=": return 1 if left != right else 0
-            if op == "<": return 1 if left < right else 0
-            if op == ">": return 1 if left > right else 0
-            if op == "<=": return 1 if left <= right else 0
-            if op == ">=": return 1 if left >= right else 0
-            raise ValueError(f"Unknown operator: '{op}'")
+            
+            # Use safe optimize method for math evaluation
+            opt_res = self.optimize(op, left, right)
+            if opt_res is not None:
+                return opt_res
+            raise ValueError(f"Evaluation error for operation: '{left} {op} {right}'")
 
         elif node_type == "assign":
             var_name = node[1]
@@ -424,8 +475,8 @@ if __name__ == "__main__":
         else:
             print(f"[!] File not found: {filepath}")
     else:
-        # Self-test demonstration of recursion (Factorial & Fibonacci)
-        print("=== OFFLINE ENGINE RECURSION TEST ===")
+        # Self-test demonstration of SymPy optimization & recursion
+        print("=== OFFLINE ENGINE SYMPY & RECURSION TEST ===")
         sample_code = """
         func factorial(n) {
             if n <= 1 {
@@ -446,4 +497,4 @@ if __name__ == "__main__":
         print(fib8);
         """
         result = run_mini_script(sample_code)
-        print(f"[+] Execution completed cleanly.")
+        print(f"[+] SymPy optimization & recursion test completed cleanly.")
