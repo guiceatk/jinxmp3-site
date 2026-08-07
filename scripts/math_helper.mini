@@ -1,0 +1,7 @@
+func square(x) {
+    return x * x;
+}
+
+func sum_squares(a, b) {
+    return square(a) + square(b);
+}
