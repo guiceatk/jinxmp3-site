@@ -2,95 +2,171 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>jinx3 — Guice Atkinson | Music & Production</title>
-  <meta name="description" content="Industrial, nu-metal, trap-metal, and hybrid electronic work under the jinx3 brand — custom beats, session guitar, mix & master." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jinx3 — Music & Beats</title>
+  <meta name="description" content="Official site of jinx3 / Guice Atkinson. Stream, download, and buy beats." />
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ── UPGRADED STOREFRONT STYLES ── */
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --card: #1a1a24;
+      --accent: #7c3aed;
+      --accent2: #a855f7;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #2d2d3d;
+      --green: #22c55e;
+      --radius: 12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+    /* NAV */
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem;
+          background: rgba(10,10,15,0.95); backdrop-filter: blur(12px);
+          border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .nav-logo { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2));
+                -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* HERO */
+    .hero { text-align: center; padding: 5rem 2rem 3rem;
+            background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 70%); }
+    .hero h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 900; line-height: 1.1;
+               background: linear-gradient(135deg, #fff 30%, var(--accent2));
+               -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: var(--muted); font-size: 1.1rem; margin-top: 1rem; max-width: 500px; margin-inline: auto; }
+    .hero-cta { display: inline-flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; justify-content: center; }
+    .btn { padding: .7rem 1.6rem; border-radius: 8px; font-weight: 600; font-size: .9rem;
+           cursor: pointer; border: none; transition: all .2s; text-decoration: none; display: inline-block; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent2); }
+    .btn-buy { background: linear-gradient(135deg, var(--accent), var(--accent2));
+               color: #fff; font-size: .8rem; padding: .5rem 1rem; }
+    .btn-buy:hover { opacity: .9; transform: translateY(-1px); }
+
+    /* STATS BAR */
+    .stats-bar { display: flex; justify-content: center; gap: 3rem; padding: 1.5rem 2rem;
+                 background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .stat { text-align: center; }
+    .stat-num { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+    .stat-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+    /* CATALOG */
+    .section { padding: 3rem 2rem; max-width: 1400px; margin-inline: auto; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .section-title { font-size: 1.4rem; font-weight: 700; }
+    .search-bar { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+                  color: var(--text); padding: .6rem 1rem; font-size: .9rem; width: 260px; outline: none; }
+    .search-bar:focus { border-color: var(--accent); }
+    .catalog-count { color: var(--muted); font-size: .85rem; }
+
+    .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; }
+    .release-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+                    overflow: hidden; transition: transform .2s, border-color .2s; }
+    .release-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+    .card-cover-wrapper { position: relative; aspect-ratio: 1; overflow: hidden; background: #111; }
+    .card-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .play-btn { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+                background: rgba(0,0,0,.5); color: #fff; font-size: 1.5rem; cursor: pointer;
+                border: none; opacity: 0; transition: opacity .2s; }
+    .card-cover-wrapper:hover .play-btn { opacity: 1; }
+    .play-btn.playing { opacity: 1; background: rgba(124,58,237,.6); }
+    .card-body { padding: .85rem; }
+    .card-title { font-size: .9rem; font-weight: 700; margin-bottom: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-artist { font-size: .75rem; color: var(--muted); margin-bottom: .75rem; }
+    .card-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+    /* SERVICES */
+    .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+    .service-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+    .service-card h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+    .service-card p { color: var(--muted); font-size: .9rem; margin-bottom: 1rem; }
+    .price { font-size: 1.3rem; font-weight: 800; color: var(--accent2); margin-bottom: .75rem; }
+    .service-card ul { list-style: none; }
+    .service-card li::before { content: "✓ "; color: var(--green); }
+    .service-card li { font-size: .85rem; color: var(--muted); margin-bottom: .3rem; }
+
+    /* FOOTER */
+    footer { text-align: center; padding: 2rem; color: var(--muted); font-size: .85rem;
+             border-top: 1px solid var(--border); margin-top: 4rem; }
+    footer a { color: var(--accent2); text-decoration: none; }
+  </style>
 </head>
 <body>
-  <header class="site-header">
-    <a class="logo" href="/">jinx3</a>
-    <nav>
-      <a href="/music.html">Music Catalog</a>
-      <a href="#services">Services</a>
-      <a href="#store">Store</a>
-      <a href="#about">About</a>
-      <a href="#contact">Contact</a>
-    </nav>
-  </header>
 
-  <main id="top">
-    <section class="hero">
-      <p class="eyebrow">Guice Atkinson · United States</p>
-      <h1>Dark production.<br />Real guitar.<br />Release-ready files.</h1>
-      <p class="lede">
-        Industrial, nu-metal, trap-metal, and hybrid electronic work under the
-        <strong>jinx3</strong> brand — custom beats, session guitar, mix &amp; master.
-      </p>
-      <div class="cta-row">
-        <a class="btn primary" href="/music.html">Explore Music Vault</a>
-        <a class="btn ghost" href="#services">View Services</a>
+<nav>
+  <span class="nav-logo">jinx3</span>
+  <div class="nav-links">
+    <a href="#catalog">Catalog</a>
+    <a href="music.html">Music</a>
+    <a href="#services">Services</a>
+    <a href="studio.html">Studio</a>
+    <a href="admin.html">Admin</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1>Guice Atkinson<br>/ jinx3</h1>
+  <p>Independent artist · producer · sovereign digital distribution</p>
+  <div class="hero-cta">
+    <a href="#catalog" class="btn btn-primary">Browse Catalog</a>
+    <a href="music.html" class="btn btn-ghost">Stream Music</a>
+  </div>
+</section>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-num" id="catalog-count">—</div>
+    <div class="stat-label">Releases</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="shopify-count">—</div>
+    <div class="stat-label">Products</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">∞</div>
+    <div class="stat-label">Platforms</div>
+  </div>
+</div>
+
+<main>
+  <!-- CATALOG -->
+  <section class="section" id="catalog">
+    <div class="section-header">
+      <h2 class="section-title">Music Catalog</h2>
+      <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+        <span class="catalog-count" id="catalog-label"></span>
+        <input class="search-bar" id="catalog-search" type="search" placeholder="Search releases…" />
       </div>
-    </section>
+    </div>
+    <div class="catalog-grid" id="catalog-grid">
+      <p style="color:var(--muted)">Loading catalog…</p>
+    </div>
+  </section>
 
-    <!-- Catalog Quick Feature Grid -->
-    <section class="section">
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
-        <div>
-          <h2>Featured Sonic Inventory</h2>
-          <p class="section-intro" style="margin-bottom:0;">Automated catalog pipeline powered by DistroKid HyperFollow &amp; Shopify Buy embeds.</p>
-        </div>
-        <a class="btn ghost btn-sm" href="/music.html">View All Releases &rarr;</a>
-      </div>
-      
-      <div class="cards" id="catalog-grid">
-        <!-- Rendered dynamically by app.js -->
-      </div>
-    </section>
+  <!-- SERVICES -->
+  <section class="section" id="services">
+    <div class="section-header">
+      <h2 class="section-title">Services</h2>
+    </div>
+    <div class="services-grid" id="service-cards">
+      <p style="color:var(--muted)">Loading services…</p>
+    </div>
+  </section>
+</main>
 
-    <section id="services" class="section muted">
-      <h2>Production Services</h2>
-      <p class="section-intro">Honest delivery. Clear briefs. Release-ready files.</p>
-      <div class="cards" id="service-cards">
-        <!-- filled by app.js from services.json -->
-      </div>
-    </section>
+<footer>
+  <p>© 2026 Guice Atkinson / jinx3 — All rights reserved.</p>
+  <p style="margin-top:.5rem"><a href="https://distrokid.com/hyperfollow/jinx310" target="_blank">DistroKid</a> · <a href="admin.html">Admin</a></p>
+</footer>
 
-    <section id="store" class="section">
-      <h2>Digital Store &amp; Stems</h2>
-      <p>
-        Digital downloads and merch — uncompressed WAV masters, guitar stems, and beat packs. 
-        All items feature zero-marginal-cost instant fulfillment.
-      </p>
-      <ul class="plain">
-        <li>Beats &amp; Instrumentals</li>
-        <li>Session Guitar Stems</li>
-        <li>Mix / Master Singles</li>
-      </ul>
-    </section>
-
-    <section id="about" class="section muted">
-      <h2>About</h2>
-      <p>
-        Guice Atkinson produces and tracks under <strong>jinx3</strong> —
-        dark tone, groove, and arrangement first. Credits on releases:
-        artist <em>jinx3</em>; guitar / producer <em>Guice Atkinson</em>.
-      </p>
-    </section>
-
-    <section id="contact" class="section">
-      <h2>Contact &amp; Custom Licensing</h2>
-      <p>Email: <a href="mailto:Guiceatkl@gmail.com">Guiceatkl@gmail.com</a></p>
-      <p>Site: <a href="https://jinxmp3.com">jinxmp3.com</a></p>
-      <p class="small">Include: project type, references, BPM/key if any, deadline, budget.</p>
-    </section>
-  </main>
-
-  <footer>
-    <span><span id="status-dot"></span>© jinx3 / Guice Atkinson</span>
-    <span>Bound exclusively to 127.0.0.1:8080</span>
-  </footer>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
