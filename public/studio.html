@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Studio — jinx3</title>
+  <meta name="description" content="In-browser synthesizer, waveform/spectrum visualizer, and WAV export." />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .studio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.25rem; }
+    .panel h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+    .row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+    .row label { flex: 0 0 110px; color: var(--muted); font-size: 0.85rem; }
+    .row input[type="range"] { flex: 1; }
+    .row select { flex: 1; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem; }
+    canvas { width: 100%; height: 140px; border-radius: 10px; border: 1px solid var(--border); background: #0a0b0d; display: block; }
+    .keyboard { display: flex; gap: 3px; margin-top: 1rem; user-select: none; }
+    .key { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 0 0 6px 6px; padding: 2rem 0 0.5rem; text-align: center; color: var(--muted); font-size: 0.75rem; cursor: pointer; }
+    .key.black { background: #05060a; color: #666; }
+    .key.active { background: var(--accent); color: #111; }
+    .badge-premium { display: inline-block; background: var(--accent); color: #111; font-weight: 700; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 999px; margin-left: 0.5rem; vertical-align: middle; }
+    .hint { color: var(--muted); font-size: 0.8rem; margin-top: 0.5rem; }
+    .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    #recordDot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #555; margin-right: 6px; }
+    #recordDot.live { background: #e5484d; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="index.html">jinx3</a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="music.html">Music</a>
+      <a href="studio.html">Studio<span class="badge-premium">Premium preview</span></a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section">
+      <p class="eyebrow">jinx3 Studio</p>
+      <h1>Synth &amp; Visualizer</h1>
+      <p class="lede">
+        Play the built-in synth or load a track, watch the waveform and spectrum live, and export
+        what you hear as a WAV. This is the foundation the voice-cloning + effects pipeline will
+        plug into next — full login/paywall gating comes in a later phase.
+      </p>
+
+      <div class="studio-grid">
+        <div class="panel">
+          <h3>Oscillator</h3>
+          <div class="row">
+            <label>Waveform</label>
+            <select id="oscType">
+              <option value="sawtooth">Sawtooth</option>
+              <option value="square">Square</option>
+              <option value="sine">Sine</option>
+              <option value="triangle">Triangle</option>
+            </select>
+          </div>
+          <div class="row">
+            <label>Octave</label>
+            <input id="octave" type="range" min="-2" max="2" value="0" step="1" />
+            <span id="octaveVal">0</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Envelope (ADSR)</h3>
+          <div class="row"><label>Attack</label><input id="attack" type="range" min="0" max="1" value="0.02" step="0.01" /></div>
+          <div class="row"><label>Decay</label><input id="decay" type="range" min="0" max="1" value="0.15" step="0.01" /></div>
+          <div class="row"><label>Sustain</label><input id="sustain" type="range" min="0" max="1" value="0.6" step="0.01" /></div>
+          <div class="row"><label>Release</label><input id="release" type="range" min="0" max="2" value="0.3" step="0.01" /></div>
+        </div>
+
+        <div class="panel">
+          <h3>Pitch Correction</h3>
+          <div class="row">
+            <label>Enabled</label>
+            <input id="ptEnabled" type="checkbox" />
+          </div>
+          <div class="row">
+            <label>Key</label>
+            <select id="ptRoot">
+              <option value="0">C</option>
+              <option value="1">C#</option>
+              <option value="2">D</option>
+              <option value="3">D#</option>
+              <option value="4">E</option>
+              <option value="5">F</option>
+              <option value="6">F#</option>
+              <option value="7">G</option>
+              <option value="8">G#</option>
+              <option value="9">A</option>
+              <option value="10">A#</option>
+              <option value="11">B</option>
+            </select>
+          </div>
+          <div class="row">
+            <label>Scale</label>
+            <select id="ptScale">
+              <option value="chromatic">Chromatic</option>
+              <option value="major">Major</option>
+              <option value="minor">Minor</option>
+            </select>
+          </div>
+          <div class="row">
+            <label>Retune speed</label>
+            <input id="ptSpeed" type="range" min="0.02" max="1" value="0.35" step="0.01" />
+          </div>
+          <p class="hint" id="ptStatus">Detected: — Hz &nbsp;→&nbsp; Target: — Hz</p>
+        </div>
+
+        <div class="panel">
+          <h3>Filter &amp; Reverb</h3>
+          <div class="row"><label>Cutoff</label><input id="cutoff" type="range" min="200" max="12000" value="8000" step="10" /></div>
+          <div class="row"><label>Resonance</label><input id="resonance" type="range" min="0" max="20" value="0.7" step="0.1" /></div>
+          <div class="row"><label>Reverb mix</label><input id="reverbMix" type="range" min="0" max="1" value="0" step="0.01" /></div>
+          <div class="row"><label>Master vol</label><input id="masterVol" type="range" min="0" max="1" value="0.8" step="0.01" /></div>
+        </div>
+
+        <div class="panel">
+          <h3>Load a track</h3>
+          <div class="row">
+            <label>Existing</label>
+            <select id="trackPicker">
+              <option value="">— choose —</option>
+              <option value="assets/audio/house-of-hearts.mp3">house-of-hearts</option>
+              <option value="assets/audio/i-love-this-bitch.mp3">i-love-this-bitch</option>
+              <option value="assets/audio/keep-it-in-your-mouth.mp3">keep-it-in-your-mouth</option>
+              <option value="assets/audio/the-unmonitored-wheel.mp3">the-unmonitored-wheel</option>
+            </select>
+          </div>
+          <div class="row">
+            <label>Or upload</label>
+            <input id="fileUpload" type="file" accept="audio/*" />
+          </div>
+          <audio id="player" controls style="width:100%; margin-top:0.5rem;"></audio>
+          <p class="hint">Loaded tracks route through the same filter/reverb chain and visualizer as the synth.</p>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:1.25rem;">
+        <h3>Visualizer</h3>
+        <canvas id="waveCanvas" width="1000" height="140"></canvas>
+        <canvas id="freqCanvas" width="1000" height="140" style="margin-top:0.75rem;"></canvas>
+      </div>
+
+      <div class="panel" style="margin-top:1.25rem;">
+        <h3>Keyboard</h3>
+        <p class="hint">Click keys or use your computer keyboard: A W S E D F T G Y H U J K O L P ;</p>
+        <div class="keyboard" id="keyboard"></div>
+      </div>
+
+      <div class="panel" style="margin-top:1.25rem;">
+        <h3><span id="recordDot"></span>Record &amp; Export</h3>
+        <div class="btn-row">
+          <button class="btn primary" id="recordBtn" type="button">Start recording</button>
+          <button class="btn ghost" id="downloadBtn" type="button" disabled>Download WAV</button>
+        </div>
+        <p class="hint">Recording captures whatever is currently audible: synth playing or a loaded track.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© jinx3 / Guice Atkinson</span>
+  </footer>
+
+  <script src="studio.js"></script>
+  <script>
+    const S = window.JinxStudio;
+
+    // Oscillator + octave
+    document.getElementById("oscType").addEventListener("change", (e) => S.setOscType(e.target.value));
+    const octaveEl = document.getElementById("octave");
+    octaveEl.addEventListener("input", (e) => {
+      S.setOctaveShift(parseInt(e.target.value, 10));
+      document.getElementById("octaveVal").textContent = e.target.value;
+    });
+
+    // Envelope
+    ["attack", "decay", "sustain", "release"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", (e) => {
+        S.setEnvelope({ [id]: parseFloat(e.target.value) });
+      });
+    });
+
+    // Filter / reverb / volume
+    document.getElementById("cutoff").addEventListener("input", (e) => S.setFilterCutoff(parseFloat(e.target.value)));
+    document.getElementById("resonance").addEventListener("input", (e) => S.setFilterQ(parseFloat(e.target.value)));
+    document.getElementById("reverbMix").addEventListener("input", (e) => S.setReverbMix(parseFloat(e.target.value)));
+    document.getElementById("masterVol").addEventListener("input", (e) => S.setMasterVolume(parseFloat(e.target.value)));
+
+    // Track loading
+    const player = document.getElementById("player");
+    let sourceConnected = false;
+    function ensureFileSourceConnected() {
+      if (!sourceConnected) {
+        S.connectFileSource(player);
+        sourceConnected = true;
+      }
+    }
+    document.getElementById("trackPicker").addEventListener("change", (e) => {
+      if (!e.target.value) return;
+      S.resume();
+      player.src = e.target.value;
+      ensureFileSourceConnected();
+      player.play();
+    });
+    document.getElementById("fileUpload").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      S.resume();
+      player.src = URL.createObjectURL(file);
+      ensureFileSourceConnected();
+      player.play();
+    });
+
+    // Pitch correction
+    document.getElementById("ptEnabled").addEventListener("change", (e) => S.setPitchCorrectionEnabled(e.target.checked));
+    document.getElementById("ptRoot").addEventListener("change", (e) => S.setPitchRoot(parseInt(e.target.value, 10)));
+    document.getElementById("ptScale").addEventListener("change", (e) => S.setPitchScale(e.target.value));
+    document.getElementById("ptSpeed").addEventListener("input", (e) => S.setPitchSpeed(parseFloat(e.target.value)));
+    const ptStatus = document.getElementById("ptStatus");
+    S.onPitchInfo(({ detected, target }) => {
+      ptStatus.textContent = `Detected: ${detected ? detected.toFixed(1) + " Hz" : "—"}  →  Target: ${target ? target.toFixed(1) + " Hz" : "—"}`;
+    });
+
+    // Visualizer
+    S.drawVisualizers(document.getElementById("waveCanvas"), document.getElementById("freqCanvas"));
+
+    // Keyboard UI
+    const keyboardEl = document.getElementById("keyboard");
+    const BLACK_KEYS = new Set(["C#4", "D#4", "F#4", "G#4", "A#4", "C#5", "D#5"]);
+    const keyEls = {};
+    S.NOTE_KEYS.forEach(([key, note]) => {
+      const div = document.createElement("div");
+      div.className = "key" + (BLACK_KEYS.has(note) ? " black" : "");
+      div.textContent = key.toUpperCase();
+      div.dataset.key = key;
+      div.dataset.note = note;
+      keyboardEl.appendChild(div);
+      keyEls[key] = div;
+
+      const press = () => {
+        S.resume();
+        S.noteOn(note, key);
+        div.classList.add("active");
+      };
+      const release = () => {
+        S.noteOff(key);
+        div.classList.remove("active");
+      };
+      div.addEventListener("mousedown", press);
+      div.addEventListener("mouseup", release);
+      div.addEventListener("mouseleave", release);
+      div.addEventListener("touchstart", (ev) => { ev.preventDefault(); press(); });
+      div.addEventListener("touchend", (ev) => { ev.preventDefault(); release(); });
+    });
+
+    const heldKeys = new Set();
+    window.addEventListener("keydown", (e) => {
+      const key = e.key.toLowerCase();
+      if (heldKeys.has(key)) return;
+      const el = keyEls[key];
+      if (!el) return;
+      heldKeys.add(key);
+      S.resume();
+      S.noteOn(el.dataset.note, key);
+      el.classList.add("active");
+    });
+    window.addEventListener("keyup", (e) => {
+      const key = e.key.toLowerCase();
+      heldKeys.delete(key);
+      const el = keyEls[key];
+      if (!el) return;
+      S.noteOff(key);
+      el.classList.remove("active");
+    });
+
+    // Record / export
+    const recordBtn = document.getElementById("recordBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const recordDot = document.getElementById("recordDot");
+    let isRecording = false;
+    let lastWavBuffer = null;
+
+    recordBtn.addEventListener("click", () => {
+      S.resume();
+      if (!isRecording) {
+        S.startRecording();
+        isRecording = true;
+        recordBtn.textContent = "Stop recording";
+        recordDot.classList.add("live");
+        downloadBtn.disabled = true;
+      } else {
+        lastWavBuffer = S.stopRecordingAndExport();
+        isRecording = false;
+        recordBtn.textContent = "Start recording";
+        recordDot.classList.remove("live");
+        downloadBtn.disabled = false;
+      }
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      if (!lastWavBuffer) return;
+      const blob = new Blob([lastWavBuffer], { type: "audio/wav" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `jinx-studio-${Date.now()}.wav`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>

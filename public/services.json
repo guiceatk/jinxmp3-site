@@ -1,0 +1,69 @@
+[
+  {
+    "id": "beats",
+    "title": "Custom beats / production",
+    "blurb": "Industrial, nu-metal, trap-metal, hybrid electronic instrumentals built to your references.",
+    "price": "from $49",
+    "bullets": [
+      "WAV + MP3",
+      "Structure + bounce",
+      "Revisions by package"
+    ]
+  },
+  {
+    "id": "mix",
+    "title": "Mix & master",
+    "blurb": "Punchy, clear singles for streaming and content — rock, metal, dark electronic.",
+    "price": "from $45",
+    "bullets": [
+      "Stereo or stems",
+      "Streaming master",
+      "Reference-matched tone"
+    ]
+  },
+  {
+    "id": "guitar",
+    "title": "Session guitar",
+    "blurb": "Remote rhythm, riffs, and leads as dry stems ready for your DAW.",
+    "price": "from $55",
+    "bullets": [
+      "Matched to BPM/key",
+      "Dry WAV stems",
+      "Style references welcome"
+    ]
+  },
+  {
+    "id": "video",
+    "title": "Music promo edit",
+    "blurb": "Vertical promo cuts for TikTok / Reels / Shorts (when booked).",
+    "price": "from $25",
+    "bullets": [
+      "Beat-matched edits",
+      "Captions / titles",
+      "Platform exports"
+    ]
+  },
+  {
+    "id": "magic_paper",
+    "title": "Magic Paper",
+    "blurb": "Ancient parchment paper with embedded micro-print. Sold at a 5-foot minimum for continuous magic rolls.",
+    "price": "$1 / foot (5 ft min)",
+    "bullets": [
+      "Authentic ancient parchment feel",
+      "Embedded microscopic precision print",
+      "Custom lengths cut to order"
+    ]
+  },
+  {
+    "id": "paper_time_machine",
+    "title": "Paper Time Machine",
+    "blurb": "An interactive 24-hour paper clock invention by Guice Atkinson. Pick a date, search the place and time, then uncover and record 24 historical events that happened across those hours.",
+    "price": "$99.99",
+    "bullets": [
+      "Proprietary 24-hour paper clock dial",
+      "Research dates, places, and times",
+      "Uncover and document 24 historical events",
+      "Complete chronological layout"
+    ]
+  }
+]

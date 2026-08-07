@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Music Catalog · jinx3 / Guice Atkinson</title>
+  <meta name="description" content="Explore official sonic catalog releases, stems, beat packs, and streaming portals." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="/">jinx3</a>
+    <nav>
+      <a href="/">Home</a>
+      <a class="active" href="/music.html">Music Catalog</a>
+      <a href="/#services">Services</a>
+      <a href="/#about">About</a>
+      <a href="/#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem;">
+        <div>
+          <p class="eyebrow">Guice Atkinson Vault</p>
+          <h1 style="margin: 0.25rem 0 0.5rem;">Official Sonic Releases</h1>
+        </div>
+        <span class="catalog-count-badge" id="catalog-count">Loading catalog...</span>
+      </div>
+      <p class="section-intro">
+        Stream across all major platforms via DistroKid HyperFollow or acquire high-margin direct digital stems &amp; audio packs.
+      </p>
+
+      <div class="catalog-toolbar">
+        <input type="text" id="catalog-search" class="search-input" placeholder="Search catalog by title..." />
+      </div>
+
+      <div class="cards" id="catalog-grid">
+        <!-- Dynamic release cards loaded by app.js from catalog.json -->
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span><span id="status-dot"></span>© jinx3 / Guice Atkinson</span>
+    <span>Bound exclusively to 127.0.0.1:8080</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
