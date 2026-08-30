@@ -1,0 +1,132 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# desktop-agent — default configuration
+# Copy this to config/local.yaml and edit for your machine.
+# NEVER commit config/local.yaml (it is in .gitignore).
+# ─────────────────────────────────────────────────────────────────────────────
+
+agent:
+  # Friendly name shown in dashboard
+  name: "Desktop Agent"
+  # dry_run: true means NO changes are ever made — only previewed
+  dry_run: true
+  # log level: DEBUG | INFO | WARNING | ERROR
+  log_level: INFO
+  # Max observations stored before oldest are pruned (0 = unlimited)
+  max_observations: 10000
+  # Seconds between pattern-detection cycles
+  analysis_interval_seconds: 300
+  # Maximum CPU % the agent process may consume
+  max_cpu_percent: 10
+  # Maximum RAM the agent process may consume (MB)
+  max_memory_mb: 256
+  # Maximum file-system events processed per second
+  max_events_per_second: 50
+
+# ─── Permission levels ────────────────────────────────────────────────────────
+# Each level must be explicitly set to true to enable.
+# Default: observe_only only.
+permissions:
+  observe_only: true        # Watch filesystem events, no reads
+  read_files: false         # Read file contents for indexing/analysis
+  modify_files: false       # Copy, move, rename, delete files
+  run_commands: false       # Execute PowerShell / CMD
+  control_applications: false  # Launch / close applications
+  control_windows: false    # Control window focus and input
+  manage_processes: false   # Kill / suspend processes
+  modify_system_settings: false  # Registry, scheduled tasks, etc.
+  network_access: false     # Any outbound network calls
+  external_actions: false   # Actions affecting services outside this machine
+
+# ─── Approved directories ─────────────────────────────────────────────────────
+# Only paths listed here will be indexed or watched.
+approved_directories: []
+# Example:
+# approved_directories:
+#   - "C:\\Projects\\MyWork"
+#   - "C:\\Users\\YourName\\Documents\\Automation"
+
+# ─── Approved applications ────────────────────────────────────────────────────
+# Process names the agent is allowed to observe and (if enabled) control.
+approved_applications: []
+# Example:
+# approved_applications:
+#   - "notepad.exe"
+#   - "code.exe"
+#   - "powershell.exe"
+
+# ─── Approved commands ────────────────────────────────────────────────────────
+# Exact executable names (no paths) permitted for run_commands.
+# Requires permissions.run_commands: true
+approved_commands: []
+# Example:
+# approved_commands:
+#   - "python"
+#   - "powershell"
+#   - "git"
+
+# ─── Secret exclusion patterns ───────────────────────────────────────────────
+# Files or directories matching these glob patterns are NEVER indexed,
+# read, or included in any output.
+secret_exclusions:
+  globs:
+    - "**/.env"
+    - "**/.env.*"
+    - "**/secrets.*"
+    - "**/*secret*"
+    - "**/*token*"
+    - "**/*password*"
+    - "**/*credential*"
+    - "**/*.pem"
+    - "**/*.key"
+    - "**/*.p12"
+    - "**/*.pfx"
+    - "**/*.cer"
+    - "**/*.crt"
+    - "**/id_rsa"
+    - "**/id_ed25519"
+    - "**/id_ecdsa"
+    - "**/*.ppk"
+    - "**/Login Data"
+    - "**/Cookies"
+    - "**/key4.db"
+    - "**/logins.json"
+    - "**/places.sqlite"
+    - "**/*.credentials"
+    - "**/auth.json"
+    - "**/service_account*.json"
+  # Regex patterns matched against file content lines during read_files
+  content_patterns:
+    - '(?i)(password|passwd|pwd)\s*[=:]\s*\S+'
+    - '(?i)(api_key|apikey|api-key)\s*[=:]\s*\S+'
+    - '(?i)(secret|token|bearer)\s*[=:]\s*\S+'
+    - '-----BEGIN (RSA|EC|DSA|OPENSSH) PRIVATE KEY-----'
+    - 'ghp_[A-Za-z0-9]{36}'        # GitHub PAT
+    - 'sk-[A-Za-z0-9]{48}'         # OpenAI key
+    - 'AKIA[0-9A-Z]{16}'           # AWS access key
+
+# ─── Pattern detection thresholds ────────────────────────────────────────────
+pattern_detection:
+  # Minimum times a sequence must be observed before a proposal is generated
+  min_frequency: 3
+  # Maximum age (days) of observations included in pattern analysis
+  lookback_days: 30
+  # Minimum sequence length to consider as a pattern
+  min_sequence_length: 2
+
+# ─── Automation execution ─────────────────────────────────────────────────────
+execution:
+  # Seconds before a running command is killed
+  command_timeout_seconds: 30
+  # Create a backup snapshot before any destructive file operation
+  backup_before_destructive: true
+  # Directory for backups (relative to agent install dir)
+  backup_dir: "backups"
+
+# ─── UI ───────────────────────────────────────────────────────────────────────
+ui:
+  # Show system tray icon (requires pystray + Pillow)
+  tray_icon: true
+  # Dashboard refresh interval (seconds)
+  dashboard_refresh_seconds: 5
+  # Number of recent observations shown in dashboard
+  dashboard_observation_count: 50

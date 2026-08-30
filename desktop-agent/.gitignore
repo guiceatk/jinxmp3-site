@@ -1,0 +1,85 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+.env
+*.egg-info
+
+# ─── Agent runtime state (NEVER commit) ──────────────────────────────────────
+agent.db
+agent.db-shm
+agent.db-wal
+logs/
+backups/
+STOP
+*.lock
+
+# ─── Secrets & credentials (NEVER commit) ────────────────────────────────────
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.crt
+id_rsa
+id_ed25519
+id_ecdsa
+*.ppk
+.env
+.env.*
+!.env.example
+secrets.yaml
+secrets.toml
+secrets.json
+*_secret*
+*_token*
+*api_key*
+*password*
+*credential*
+*.credentials
+*.keystore
+*.jks
+auth.json
+service_account*.json
+
+# ─── Browser profiles & credential stores (NEVER commit) ─────────────────────
+Login Data
+Cookies
+Web Data
+History
+Bookmarks
+**/Default/
+**/Profile */
+places.sqlite
+key4.db
+logins.json
+
+# ─── OS / editor ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ─── Test artifacts ───────────────────────────────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# ─── Config overrides with sensitive data ────────────────────────────────────
+config/local.yaml
+config/local.toml
