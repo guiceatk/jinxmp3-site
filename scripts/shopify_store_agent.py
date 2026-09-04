@@ -93,8 +93,8 @@ def create_shopify_product(entry: dict, tunnel_host: str = "www.jinxmp3.com") ->
             "status": "draft",
             "variants": [
                 {
-                    "title": "WAV Download",
-                    "price": "4.99",
+                    "title": "Digital Download",
+                    "price": str(entry.get("price", "4.99")),
                     "sku": entry.get("slug", ""),
                     "inventory_management": None,
                     "fulfillment_service": "manual",
