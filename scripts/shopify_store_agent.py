@@ -30,7 +30,9 @@ from pathlib import Path
 from datetime import datetime
 
 # ── Config ────────────────────────────────────────────────────────────────────
-SITE_DIR       = Path(os.getenv("JINX_SITE_DIR", r"C:\Users\Jinx\projects\jinxmp3-site"))
+SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_SITE_DIR = (SCRIPT_DIR.parent if SCRIPT_DIR.name == "scripts" else SCRIPT_DIR)
+SITE_DIR = Path(os.getenv("JINX_SITE_DIR") or str(DEFAULT_SITE_DIR)).resolve()
 SHOPIFY_STORE  = os.getenv("SHOPIFY_STORE_DOMAIN", "")   # e.g. jinxmp3.myshopify.com
 SHOPIFY_TOKEN  = os.getenv("SHOPIFY_ADMIN_TOKEN",  "")
 SHOPIFY_KEY    = os.getenv("SHOPIFY_API_KEY",      "")    # for Storefront API (buy buttons)

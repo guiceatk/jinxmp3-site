@@ -43,8 +43,22 @@ from typing import Optional
 # ─────────────────────────────────────────────
 # CONFIGURATION  (edit or set via .env)
 # ─────────────────────────────────────────────
-SITE_DIR        = Path(os.getenv("JINX_SITE_DIR",   r"C:\Users\Jinx\projects\jinxmp3-site"))
-MUSIC_VAULT     = Path(os.getenv("JINX_MUSIC_DIR",  r"C:\Users\Jinx\Music\Suno_DistroKid_Releases"))
+SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_SITE_DIR = (SCRIPT_DIR.parent if SCRIPT_DIR.name == "scripts" else SCRIPT_DIR)
+SITE_DIR = Path(os.getenv("JINX_SITE_DIR") or str(DEFAULT_SITE_DIR)).resolve()
+
+DEFAULT_MUSIC_VAULTS = [
+    os.getenv("JINX_MUSIC_DIR"),
+    str(SITE_DIR / "public" / "releases"),
+    str(Path.home() / "Music" / "Suno_DistroKid_Releases"),
+    r"C:\Users\Jinx\Music\Suno_DistroKid_Releases",
+    r"C:/Users/Jinx/Music/Suno_DistroKid_Releases",
+]
+
+MUSIC_VAULT = next(
+    (Path(p) for p in DEFAULT_MUSIC_VAULTS if p and Path(p).exists()),
+    Path(DEFAULT_MUSIC_VAULTS[1])
+)
 ORIGIN_URL      = os.getenv("JINX_ORIGIN_URL",      "http://127.0.0.1:8080")
 TUNNEL_NAME     = os.getenv("JINX_TUNNEL_NAME",     "jinxmp3")
 TUNNEL_HOSTNAME = os.getenv("JINX_TUNNEL_HOSTNAME", "www.jinxmp3.com")
@@ -127,22 +141,43 @@ class OriginServer:
         if OriginServer.is_alive():
             log("ORIGIN", "INFO", "Origin already running.")
             return True
-        # Windows: start detached process
-        ok, out = run(
-            f'start /B node "{SITE_DIR / "server.js"}"',
-            cwd=SITE_DIR
-        )
+
+        node_server = SITE_DIR / "server.js"
+        try:
+            if os.name == "nt":
+                subprocess.Popen(
+                    ["node", str(node_server)],
+                    cwd=str(SITE_DIR),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0),
+                )
+            else:
+                subprocess.Popen(
+                    ["node", str(node_server)],
+                    cwd=str(SITE_DIR),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+        except Exception as exc:
+            log("ORIGIN", "ERROR", f"Failed to launch origin server: {exc}")
+            return False
+
         time.sleep(3)
         if OriginServer.is_alive():
             log("ORIGIN", "INFO", "Origin server started successfully.")
             return True
-        log("ORIGIN", "ERROR", f"Failed to start origin server. Output: {out}")
+        log("ORIGIN", "ERROR", "Failed to start origin server.")
         return False
 
     @staticmethod
     def stop():
         log("ORIGIN", "INFO", "Stopping Node.js origin server…")
-        ok, out = run("taskkill /F /IM node.exe /T")
+        if os.name == "nt":
+            ok, out = run("taskkill /F /IM node.exe /T")
+        else:
+            ok, out = run("pkill -f 'node .*server.js' || true")
         log("ORIGIN", "INFO" if ok else "WARN", f"Stop result: {out}")
         return ok
 
@@ -211,17 +246,19 @@ ingress:
         if not CloudflareTunnel.CONFIG_PATH.exists():
             log("CONDUIT", "WARN", "No config.yml found — writing default config.")
             CloudflareTunnel.write_config()
-        subprocess.Popen(
-            f"cloudflared tunnel --config \"{CloudflareTunnel.CONFIG_PATH}\" run {TUNNEL_NAME}",
-            shell=True, cwd=str(SITE_DIR),
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
+        cmd = [
+            "cloudflared", "tunnel", "--config", str(CloudflareTunnel.CONFIG_PATH), "run", TUNNEL_NAME
+        ]
+        subprocess.Popen(cmd, cwd=str(SITE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=(os.name != "nt"))
         time.sleep(2)
         log("CONDUIT", "INFO", "Tunnel process launched in background.")
 
     @staticmethod
     def stop():
-        ok, out = run("taskkill /F /IM cloudflared.exe /T")
+        if os.name == "nt":
+            ok, out = run("taskkill /F /IM cloudflared.exe /T")
+        else:
+            ok, out = run("pkill -f 'cloudflared.*tunnel' || true")
         log("CONDUIT", "INFO" if ok else "WARN", f"Tunnel stop: {out}")
 
     @staticmethod

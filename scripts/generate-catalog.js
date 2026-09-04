@@ -2,10 +2,30 @@ const fs = require('fs');
 const path = require('path');
 const { logEvent } = require('../lib/logger');
 
-const VAULT_DIR = 'C:\\Users\\Jinx\\Music\\Suno_DistroKid_Releases';
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const RELEASES_PUBLIC_DIR = path.join(PUBLIC_DIR, 'releases');
 const CATALOG_JSON_PATH = path.join(PUBLIC_DIR, 'catalog.json');
+
+function resolveVaultDir() {
+  const candidates = [
+    process.env.JINX_MUSIC_DIR,
+    'C:\\Users\\Jinx\\Music\\Suno_DistroKid_Releases',
+    'C:/Users/Jinx/Music/Suno_DistroKid_Releases',
+    path.join(process.env.HOME || '', 'Music', 'Suno_DistroKid_Releases'),
+    path.join(process.env.HOME || '', 'Documents', 'Suno_DistroKid_Releases'),
+    RELEASES_PUBLIC_DIR,
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return RELEASES_PUBLIC_DIR;
+}
+
+const VAULT_DIR = resolveVaultDir();
 
 function slugify(text) {
   return text
@@ -30,9 +50,8 @@ function generateCatalog() {
   logEvent('CATALOG', 'INFO', 'Starting metadata-to-card pipeline execution.');
 
   if (!fs.existsSync(VAULT_DIR)) {
-    logEvent('CATALOG', 'ERROR', `DistroKid release vault path not found: ${VAULT_DIR}`);
-    console.error(`[!] Directory not found: ${VAULT_DIR}`);
-    return;
+    logEvent('CATALOG', 'WARN', `DistroKid release vault path not found; falling back to local public/releases directory: ${VAULT_DIR}`);
+    console.warn(`[!] Directory not found: ${VAULT_DIR}. Falling back to ${RELEASES_PUBLIC_DIR}.`);
   }
 
   if (!fs.existsSync(RELEASES_PUBLIC_DIR)) {

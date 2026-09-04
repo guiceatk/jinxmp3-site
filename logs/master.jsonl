@@ -1,0 +1,1 @@
+{"timestamp": "2026-09-04T16:17:56.275152+00:00", "category": "AGENT", "level": "INFO", "message": "Health check complete.", "origin": {"alive": true, "url": "http://127.0.0.1:8080"}, "catalog_releases": 447, "tunnel": {"running": false, "info": "/bin/sh: 1: cloudflared: not found"}, "git_dirty": true}
