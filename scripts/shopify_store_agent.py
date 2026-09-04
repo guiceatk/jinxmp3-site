@@ -28,6 +28,7 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 from datetime import datetime
+from html import escape
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SITE_DIR       = Path(os.getenv("JINX_SITE_DIR", r"C:\Users\Jinx\projects\jinxmp3-site"))
@@ -38,6 +39,7 @@ CATALOG_JSON   = SITE_DIR / "public" / "catalog.json"
 OUTPUT_HTML    = SITE_DIR / "public" / "index.html"
 API_VERSION    = "2024-01"
 BASE_URL       = f"https://{SHOPIFY_STORE}/admin/api/{API_VERSION}"
+PRODUCTS_DIR   = SITE_DIR / "staging" / "products"
 
 # ── HTTP Helper ───────────────────────────────────────────────────────────────
 def shopify_request(method: str, path: str, body: dict = None) -> tuple[int, dict]:
@@ -79,15 +81,16 @@ def create_shopify_product(entry: dict, tunnel_host: str = "www.jinxmp3.com") ->
         "product": {
             "title": entry.get("title", "Untitled Release"),
             "body_html": (
-                f"<p><strong>{entry.get('title', '')}</strong> — digital release by "
-                f"<em>{entry.get('artist', 'jinx3')}</em>.<br>"
-                f"Produced by {entry.get('producer', 'Guice Atkinson')}.</p>"
-                f"<p>🎵 <a href='{entry.get('hyperfollowUrl', '')}'>Stream on all platforms</a></p>"
+                f"<p><strong>{escape(entry.get('title', ''))}</strong> — digital release by "
+                f"<em>{escape(entry.get('artist', 'jinx3'))}</em>.<br>"
+                f"Produced by {escape(entry.get('producer', 'Guice Atkinson'))}.</p>"
+                f"<p>🎵 <a href='{escape(entry.get('hyperfollowUrl', ''))}'>Stream on all platforms</a></p>"
             ),
             "vendor": entry.get("artist", "jinx3"),
             "product_type": "Digital Music",
             "tags": "music, digital, wav, beat, jinx3, download",
-            "status": "active",
+            # Drafts are safe to create automatically; publishing remains an approval gate.
+            "status": "draft",
             "variants": [
                 {
                     "title": "WAV Download",
@@ -123,6 +126,31 @@ def sync_catalog_to_shopify():
     print(f"{'='*60}")
 
     catalog = json.loads(CATALOG_JSON.read_text(encoding="utf-8"))
+    manifests = {}
+    if PRODUCTS_DIR.is_dir():
+        for manifest_path in PRODUCTS_DIR.glob("*/product.json"):
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                bundle = Path(manifest.get("bundle", ""))
+                has_large_master = any(
+                    path.is_file() and path.stat().st_size > 1024 * 1024
+                    and path.suffix.lower() in {".mp3", ".wav", ".flac"}
+                    for path in (bundle.iterdir() if bundle.is_dir() else [])
+                )
+                has_cover = any(
+                    path.is_file() and path.stem.lower() == "cover"
+                    for path in (bundle.iterdir() if bundle.is_dir() else [])
+                )
+                if manifest.get("verified") and manifest.get("slug") and has_large_master and has_cover:
+                    manifests[manifest["slug"]] = manifest
+            except (OSError, json.JSONDecodeError):
+                print(f"[WARN] Ignoring invalid product manifest: {manifest_path}")
+    # Only packaged/verified products are eligible for automatic Shopify drafts.
+    catalog = [
+        {**entry, **manifests[entry.get("slug", "")]}
+        for entry in catalog
+        if entry.get("slug") in manifests
+    ]
     existing = get_all_shopify_products()
     print(f"  Catalog entries : {len(catalog)}")
     print(f"  Existing Shopify: {len(existing)} products")

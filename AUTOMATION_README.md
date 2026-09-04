@@ -12,6 +12,7 @@ This suite unifies every moving part of the jinxmp3.com sovereign stack into two
 |---|---|
 | `jinxmp3_master.py` | **Master controller** — interactive menu + headless CLI for all subsystems |
 | `shopify_store_agent.py` | **Shopify agent** — product sync, store report, upgraded storefront HTML |
+| `build_music_product.py` | Validates audio, renders a 45-second preview, and creates a licensed ZIP bundle |
 | `.env.example` | Environment variable template — copy to `.env` and fill in secrets |
 
 ---
@@ -188,6 +189,19 @@ Writes a fully upgraded `public/index.html` with:
 ```bash
 python shopify_store_agent.py --all
 ```
+
+## One-click product ingestion
+
+Package a release without modifying the source vault:
+
+```bash
+python scripts/build_music_product.py <track-id>
+python scripts/shopify_store_agent.py --sync
+```
+
+The package is written to `staging/products/<track-id>/`. Shopify sync only
+creates drafts for verified bundles containing a companion cover and a master
+audio file larger than 1 MB; publishing remains a manual approval step.
 
 ---
 
